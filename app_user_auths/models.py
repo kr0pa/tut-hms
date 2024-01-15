@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+from django.db.models.signals import post_save
 
 from shortuuid.django_fields import ShortUUIDField
 
@@ -22,7 +23,7 @@ class IndentityType(models.TextChoices):
 # Create your models here.
 class User(AbstractUser):    
     username = models.CharField(max_length=100, unique=True)
-    first_name = models.CharField(max_length=100, null=True, blank=True)
+    full_name = models.CharField(max_length=100, null=True, blank=True)
     email = models.EmailField(unique=True)
     phone = models.CharField(max_length=100, null=True, blank=True)
     gender = models.CharField(max_length=100, choices=Gender.choices, default=Gender.MALE)
@@ -68,8 +69,15 @@ class Profile(models.Model):
             return f"{self.user.username}"
     
     
+def create_user_profile(sender, created, instance, **kwargs):
+    if created:
+        Profile.objects.create(user=instance)   
+        
+def save_user_profile(sender, instance, **kwargs):
+    instance.profile.save()
     
-    
+post_save.connect(create_user_profile, sender=User)
+post_save.connect(save_user_profile, sender=User)
     
     
     
